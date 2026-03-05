@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="HourStack"/>
+<meta name="theme-color" content="#0f1117"/>
+<title>HourStack · Denver</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f1117;--card:#181b26;--card2:#1e2133;
+  --accent:#f5c842;--accent-dim:#f5c84222;
+  --green:#3dd68c;--green-dim:#3dd68c18;
+  --red:#f06060;--red-dim:#f0606018;
+  --blue:#60b0f0;--blue-dim:#60b0f018;
+  --text:#e8eaf0;--muted:#6870a0;--border:#252840;
+  --input:#12141e;--radius:14px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif}
+body{display:flex;flex-direction:column}
+
+/* NAV */
+#nav{display:flex;background:var(–card);border-top:1px solid var(–border);padding:8px 0 max(8px,env(safe-area-inset-bottom));order:2;flex-shrink:0}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(–muted);font-size:9px;font-family:‘Syne’,sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:6px 0;cursor:pointer;transition:color .2s}
+.nav-btn .icon{font-size:20px;line-height:1}
+.nav-btn.active{color:var(–accent)}
+
+/* HEADER */
+#header{background:var(–card);border-bottom:1px solid var(–border);padding:max(16px,env(safe-area-inset-top)) 20px 14px;flex-shrink:0}
+.header-row{display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:22px;font-weight:800;color:var(–accent);letter-spacing:-1px}
+.logo span{color:var(–muted);font-size:12px;font-weight:400;margin-left:6px}
+#live-clock{font-family:‘DM Mono’,monospace;font-size:15px;color:var(–text);font-weight:500}
+#live-date{font-size:11px;color:var(–muted);text-align:right;margin-top:1px}
+
+/* SCROLL */
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;order:1;padding:16px 16px max(80px,env(safe-area-inset-bottom))}
+
+/* TAB PANELS */
+.panel{display:none;flex-direction:column;gap:12px}
+.panel.active{display:flex}
+
+/* CARDS */
+.card{background:var(–card);border:1px solid var(–border);border-radius:var(–radius);padding:16px}
+.card-title{font-size:10px;font-weight:700;color:var(–muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px}
+
+/* STATS GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat-label{font-size:10px;color:var(–muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.stat-val{font-family:‘DM Mono’,monospace;font-size:22px;font-weight:500}
+.stat-sub{font-size:11px;color:var(–muted);margin-top:2px}
+.stat-val.accent{color:var(–accent)}
+.stat-val.green{color:var(–green)}
+.stat-val.red{color:var(–red)}
+
+/* TIMER */
+#timer-display{font-family:‘DM Mono’,monospace;font-size:52px;font-weight:500;color:var(–accent);text-align:center;letter-spacing:-2px;line-height:1;padding:16px 0 4px}
+#timer-status{font-size:12px;color:var(–muted);text-align:center;margin-bottom:16px;min-height:16px}
+
+/* CLOCK BTN */
+.clock-btn{width:100%;padding:16px;border-radius:12px;border:none;font-family:‘Syne’,sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.clock-btn.in{background:var(–green);color:#0f1117;box-shadow:0 0 30px var(–green-dim)}
+.clock-btn.out{background:var(–red);color:#fff;box-shadow:0 0 30px var(–red-dim)}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;font-family:‘DM Mono’,monospace}
+.pill.accent{background:var(–accent-dim);color:var(–accent)}
+.pill.green{background:var(–green-dim);color:var(–green)}
+.pill.red{background:var(–red-dim);color:var(–red)}
+.pill.blue{background:var(–blue-dim);color:var(–blue)}
+
+/* INPUTS */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:var(–muted);font-weight:600;letter-spacing:.05em}
+.field input,.field select{background:var(–input);border:1px solid var(–border);border-radius:8px;color:var(–text);padding:10px 12px;font-size:14px;font-family:‘Syne’,sans-serif;outline:none;width:100%;-webkit-appearance:none}
+.field select{background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘10’ height=‘6’%3E%3Cpath d=‘M0 0l5 6 5-6z’ fill=’%236870a0’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 12px center}
+.row{display:flex;gap:10px}
+.row .field{flex:1}
+
+/* BUTTON */
+.btn{background:var(–accent);color:#0f1117;border:none;border-radius:8px;padding:11px 18px;font-family:‘Syne’,sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-sm{background:var(–red-dim);color:var(–red);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:‘Syne’,sans-serif;font-weight:700;cursor:pointer}
+
+/* DIVIDER */
+.div{height:1px;background:var(–border);margin:12px 0}
+
+/* SESSION ROW */
+.sess-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(–border)}
+.sess-row:last-child{border-bottom:none}
+.sess-info{font-size:13px;font-weight:600}
+.sess-sub{font-size:11px;color:var(–muted);margin-top:2px;font-family:‘DM Mono’,monospace}
+.sess-right{display:flex;align-items:center;gap:8px}
+
+/* TAX BAR */
+.bar-bg{background:var(–border);border-radius:99px;height:7px;overflow:hidden;margin-top:6px}
+.bar-fill{height:100%;border-radius:99px;transition:width .5s ease}
+
+/* BANNER */
+.banner{border-radius:var(–radius);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.banner.green{background:#1a2018;border:1px solid #3dd68c30}
+.banner.amber{background:#1f1c0f;border:1px solid #f5c84230}
+.banner.info{background:#0f1520;border:1px solid #60b0f030}
+
+/* NOTE */
+.note-box{background:var(–input);border:1px solid var(–border);border-radius:10px;padding:12px;font-size:11px;color:var(–muted);line-height:1.6}
+
+/* SAVE BTN */
+.save-btn{background:var(–green);color:#0f1117;border:none;border-radius:8px;padding:13px;font-family:‘Syne’,sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:4px}
+
+/* PULSING DOT */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(–green);animation:pulse 1.5s infinite;box-shadow:0 0 8px var(–green)}
+
+/* ERROR */
+.error{color:var(–red);font-size:12px;margin-top:4px}
+
+/* Empty state */
+.empty{text-align:center;padding:32px 0;color:var(–muted);font-size:13px}
+</style>
+
+</head>
+<body>
+
+<div id="header">
+  <div class="header-row">
+    <div>
+      <div class="logo">HourStack <span>Denver, CO</span></div>
+    </div>
+    <div>
+      <div id="live-clock">--:--:--</div>
+      <div id="live-date">--</div>
+    </div>
+  </div>
+</div>
+
+<div id="content">
+
+  <!-- DASHBOARD -->
+
+  <div class="panel active" id="tab-dashboard">
+    <div id="clocked-in-banner" style="display:none" class="banner green">
+      <div class="dot green"></div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:#3dd68c;font-size:13px">Currently Clocked In</div>
+        <div id="banner-since" style="font-size:11px;color:#6870a0"></div>
+      </div>
+      <div id="banner-timer" style="font-family:'DM Mono',monospace;font-size:20px;color:#3dd68c;font-weight:500"></div>
+    </div>
+
+```
+<div class="g3">
+  <div class="card">
+    <div class="stat-label">This Week</div>
+    <div class="stat-val accent" id="d-week-hrs">0.0h</div>
+    <div class="stat-sub" id="d-week-sess">0 shifts</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Gross</div>
+    <div class="stat-val green" id="d-gross">$0.00</div>
+    <div class="stat-sub" id="d-rate">@$18/hr</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Take-Home</div>
+    <div class="stat-val" id="d-net">$0.00</div>
+    <div class="stat-sub" id="d-eff-rate">~0% tax</div>
+  </div>
+</div>
+
+<div id="ot-banner" style="display:none" class="banner amber">
+  <span style="font-size:16px">⚡</span>
+  <div>
+    <div style="font-weight:700;color:#f5c842;font-size:13px">Overtime Active</div>
+    <div id="ot-detail" style="font-size:11px;color:#6870a0"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Pay Period Estimate</div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+    <span style="color:var(--muted);font-size:13px">Gross Pay</span>
+    <span style="font-weight:700" id="d-pp-gross">$0.00</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+    <span style="color:var(--muted);font-size:13px">Est. Taxes + OPT</span>
+    <span style="font-weight:700;color:var(--red)" id="d-pp-tax">-$0.00</span>
+  </div>
+  <div class="div" style="margin:10px 0"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span style="font-weight:700">Net Deposit</span>
+    <span style="font-weight:700;color:var(--green);font-size:20px;font-family:'DM Mono',monospace" id="d-pp-net">$0.00</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Quick Clock</div>
+  <button class="clock-btn in" id="dash-clock-btn" onclick="toggleClock()">▶ Clock In</button>
+  <div id="dash-earning" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px;min-height:16px"></div>
+</div>
+
+<div class="banner info">
+  <span style="font-size:15px">📍</span>
+  <div style="font-size:11px;color:#60b0f0;line-height:1.5">
+    Pre-loaded with <strong style="color:#e8eaf0">Colorado 4.40% state tax</strong> + <strong style="color:#e8eaf0">Denver OPT $5.75/mo</strong>. Adjust in Settings anytime.
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- CLOCK -->
+
+  <div class="panel" id="tab-clock">
+    <div class="card">
+      <div id="timer-display">00:00:00</div>
+      <div id="timer-status">Press to start tracking</div>
+      <button class="clock-btn in" id="main-clock-btn" onclick="toggleClock()">▶ Clock In</button>
+      <div id="clock-earning" style="text-align:center;font-size:13px;color:var(--muted);margin-top:10px;min-height:18px"></div>
+    </div>
+
+```
+<div class="card">
+  <div class="card-title">Add Manual Shift</div>
+  <div class="row" style="margin-bottom:10px">
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="m-date"/>
+    </div>
+  </div>
+  <div class="row" style="margin-bottom:10px">
+    <div class="field">
+      <label>Start Time</label>
+      <input type="time" id="m-start"/>
+    </div>
+    <div class="field">
+      <label>End Time</label>
+      <input type="time" id="m-end"/>
+    </div>
+  </div>
+  <div class="field" style="margin-bottom:10px">
+    <label>Note (optional)</label>
+    <input type="text" id="m-note" placeholder="e.g. Opening shift"/>
+  </div>
+  <div id="manual-error" class="error"></div>
+  <button class="btn" style="width:100%;margin-top:6px" onclick="addManual()">+ Add Shift</button>
+</div>
+```
+
+  </div>
+
+  <!-- SESSIONS -->
+
+  <div class="panel" id="tab-sessions">
+    <div class="card">
+      <div class="card-title" id="sess-count-title">All Shifts (0)</div>
+      <div id="sess-list"><div class="empty">No shifts yet. Clock in or add a manual entry.</div></div>
+    </div>
+  </div>
+
+  <!-- TAXES -->
+
+  <div class="panel" id="tab-taxes">
+    <div class="card">
+      <div class="card-title">Weekly Tax Breakdown</div>
+      <div id="tax-rows"></div>
+      <div class="div"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:14px">Effective Rate</div>
+          <div style="font-size:11px;color:var(--muted)">All taxes combined</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500;color:var(--red)" id="eff-rate-display">0.0%</div>
+      </div>
+    </div>
+
+```
+<div class="g2">
+  <div class="card">
+    <div class="card-title">This Week</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Gross</div>
+    <div style="font-weight:700;font-family:'DM Mono',monospace" id="t-gross">$0.00</div>
+    <div style="font-size:12px;color:var(--muted);margin:8px 0 4px">Taxes</div>
+    <div style="font-weight:700;color:var(--red);font-family:'DM Mono',monospace" id="t-tax">-$0.00</div>
+    <div class="div" style="margin:10px 0"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Net</div>
+    <div style="font-weight:700;color:var(--green);font-size:20px;font-family:'DM Mono',monospace" id="t-net">$0.00</div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="pp-label">Per Paycheck</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Gross</div>
+    <div style="font-weight:700;font-family:'DM Mono',monospace" id="t-pp-gross">$0.00</div>
+    <div style="font-size:12px;color:var(--muted);margin:8px 0 4px">Taxes</div>
+    <div style="font-weight:700;color:var(--red);font-family:'DM Mono',monospace" id="t-pp-tax">-$0.00</div>
+    <div class="div" style="margin:10px 0"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Net Deposit</div>
+    <div style="font-weight:700;color:var(--green);font-size:20px;font-family:'DM Mono',monospace" id="t-pp-net">$0.00</div>
+  </div>
+</div>
+
+<div class="note-box">
+  ⚠️ <strong style="color:var(--text)">Estimates only.</strong> Includes Colorado flat income tax (4.40%), federal brackets (2024), FICA (7.65%), and Denver Occupational Privilege Tax ($5.75/mo). Actual withholding depends on W-4 elections, deductions, and other factors. Consult a tax professional.
+</div>
+```
+
+  </div>
+
+  <!-- SETTINGS -->
+
+  <div class="panel" id="tab-settings">
+    <div class="card">
+      <div class="card-title">Pay Settings</div>
+      <div class="g2" style="gap:10px;margin-bottom:12px">
+        <div class="field">
+          <label>Hourly Rate ($)</label>
+          <input type="number" id="s-rate" min="1" step="0.25" value="18" oninput="saveSettings()"/>
+        </div>
+        <div class="field">
+          <label>OT Multiplier</label>
+          <input type="number" id="s-ot-mult" min="1" step="0.1" value="1.5" oninput="saveSettings()"/>
+        </div>
+      </div>
+      <div class="g2" style="gap:10px">
+        <div class="field">
+          <label>OT After (hrs/wk)</label>
+          <input type="number" id="s-ot-hrs" min="1" value="40" oninput="saveSettings()"/>
+        </div>
+        <div class="field">
+          <label>Pay Frequency</label>
+          <select id="s-freq" onchange="saveSettings()">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly" selected>Bi-Weekly</option>
+            <option value="semimonthly">Semi-Monthly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+```
+<div class="card">
+  <div class="card-title">Colorado / Denver Tax Settings</div>
+  <div class="g2" style="gap:10px;margin-bottom:12px">
+    <div class="field">
+      <label>Filing Status</label>
+      <select id="s-filing" onchange="saveSettings()">
+        <option value="single" selected>Single</option>
+        <option value="married">Married Joint</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>CO State Tax (%)</label>
+      <input type="number" id="s-state" min="0" max="20" step="0.1" value="4.40" oninput="saveSettings()"/>
+    </div>
+  </div>
+  <div class="field">
+    <label>Denver OPT ($/month — $5.75 default)</label>
+    <input type="number" id="s-opt" min="0" step="0.25" value="5.75" oninput="saveSettings()"/>
+  </div>
+  <div class="note-box" style="margin-top:12px">
+    Colorado flat income tax is <strong style="color:#e8eaf0">4.40%</strong> for 2025. Denver workers pay an additional <strong style="color:#e8eaf0">$5.75/month</strong> Occupational Privilege Tax if earning ≥$500/mo.
+  </div>
+</div>
+
+<button class="save-btn" onclick="clearAll()">🗑 Clear All Data</button>
+```
+
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+
+<div id="nav">
+  <button class="nav-btn active" id="nav-dashboard" onclick="setTab('dashboard')"><span class="icon">📊</span>Dashboard</button>
+  <button class="nav-btn" id="nav-clock" onclick="setTab('clock')"><span class="icon">⏱</span>Clock</button>
+  <button class="nav-btn" id="nav-sessions" onclick="setTab('sessions')"><span class="icon">📋</span>Shifts</button>
+  <button class="nav-btn" id="nav-taxes" onclick="setTab('taxes')"><span class="icon">🧾</span>Taxes</button>
+  <button class="nav-btn" id="nav-settings" onclick="setTab('settings')"><span class="icon">⚙️</span>Settings</button>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+let state = {
+  sessions: [],
+  clockInTime: null,
+  settings: {
+    hourlyRate: 18, otMult: 1.5, otAfter: 40,
+    payFreq: 'biweekly', filing: 'single',
+    stateTax: 4.40, denverOPT: 5.75
+  }
+};
+
+// ─── STORAGE ─────────────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem('hs_state', JSON.stringify({sessions:state.sessions, settings:state.settings})); } catch(e){}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('hs_state')||'{}');
+    if(d.sessions) state.sessions = d.sessions.map(s=>({...s,date:new Date(s.date),start:new Date(s.start),end:new Date(s.end)}));
+    if(d.settings) state.settings = {...state.settings,...d.settings};
+    syncSettingsUI();
+  } catch(e){}
+}
+
+function syncSettingsUI(){
+  const s = state.settings;
+  document.getElementById('s-rate').value = s.hourlyRate;
+  document.getElementById('s-ot-mult').value = s.otMult;
+  document.getElementById('s-ot-hrs').value = s.otAfter;
+  document.getElementById('s-freq').value = s.payFreq;
+  document.getElementById('s-filing').value = s.filing;
+  document.getElementById('s-state').value = s.stateTax;
+  document.getElementById('s-opt').value = s.denverOPT;
+}
+
+function saveSettings(){
+  state.settings.hourlyRate = parseFloat(document.getElementById('s-rate').value)||18;
+  state.settings.otMult = parseFloat(document.getElementById('s-ot-mult').value)||1.5;
+  state.settings.otAfter = parseFloat(document.getElementById('s-ot-hrs').value)||40;
+  state.settings.payFreq = document.getElementById('s-freq').value;
+  state.settings.filing = document.getElementById('s-filing').value;
+  state.settings.stateTax = parseFloat(document.getElementById('s-state').value)||4.40;
+  state.settings.denverOPT = parseFloat(document.getElementById('s-opt').value)||5.75;
+  save(); render();
+}
+
+function clearAll(){
+  if(confirm('Clear all shift data?')){ state.sessions=[]; state.clockInTime=null; save(); render(); }
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────
+let currentTab = 'dashboard';
+function setTab(t){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('nav-'+t).classList.add('active');
+  currentTab = t;
+}
+
+// ─── CLOCK ────────────────────────────────────────────────────────────
+let timerInterval = null;
+function toggleClock(){
+  if(!state.clockInTime){
+    state.clockInTime = new Date();
+    timerInterval = setInterval(render, 1000);
+  } else {
+    const end = new Date();
+    const hrs = (end - state.clockInTime) / 3600000;
+    state.sessions.push({id:Date.now(), date:state.clockInTime, start:state.clockInTime, end, hours:+hrs.toFixed(4), note:''});
+    state.clockInTime = null;
+    clearInterval(timerInterval);
+    save();
+  }
+  render();
+}
+
+function addManual(){
+  const date = document.getElementById('m-date').value;
+  const s = document.getElementById('m-start').value;
+  const e = document.getElementById('m-end').value;
+  const note = document.getElementById('m-note').value;
+  document.getElementById('manual-error').textContent='';
+  if(!date||!s||!e){document.getElementById('manual-error').textContent='Fill in date, start & end time.';return;}
+  const start = new Date(date+'T'+s), end = new Date(date+'T'+e);
+  if(isNaN(start)||isNaN(end)||end<=start){document.getElementById('manual-error').textContent='End must be after start.';return;}
+  const hrs = (end-start)/3600000;
+  state.sessions.push({id:Date.now(),date:start,start,end,hours:+hrs.toFixed(4),note});
+  document.getElementById('m-date').value='';
+  document.getElementById('m-start').value='';
+  document.getElementById('m-end').value='';
+  document.getElementById('m-note').value='';
+  save(); render();
+  setTab('sessions');
+}
+
+function deleteSession(id){
+  state.sessions = state.sessions.filter(s=>s.id!==id);
+  save(); render();
+}
+
+// ─── TAX CALC ─────────────────────────────────────────────────────────
+const BRACKETS = {
+  single:[[0,11600,.10],[11600,47150,.12],[47150,100525,.22],[100525,191950,.24],[191950,243725,.32],[243725,609350,.35],[609350,Infinity,.37]],
+  married:[[0,23200,.10],[23200,94300,.12],[94300,201050,.22],[201050,383900,.24],[383900,487450,.32],[487450,731200,.35],[731200,Infinity,.37]]
+};
+function fedTax(annual, status){
+  const bs = BRACKETS[status]||BRACKETS.single;
+  let t=0;
+  for(const [min,max,rate] of bs){ if(annual<=min)break; t+=(Math.min(annual,max)-min)*rate; }
+  return t;
+}
+
+// ─── FORMAT ───────────────────────────────────────────────────────────
+const fmt$ = n => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtT = d => d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const fmtD = d => d.toLocaleDateString([],{month:'short',day:'numeric'});
+
+function elapsedStr(ms){
+  const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+// ─── COMPUTE ──────────────────────────────────────────────────────────
+function compute(){
+  const {hourlyRate,otMult,otAfter,payFreq,filing,stateTax,denverOPT} = state.settings;
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setHours(0,0,0,0); weekStart.setDate(now.getDate()-now.getDay());
+  const weekSess = state.sessions.filter(s=>s.date>=weekStart);
+  const weekHrs = weekSess.reduce((a,s)=>a+s.hours,0);
+  const regHrs = Math.min(weekHrs,otAfter), otHrs = Math.max(0,weekHrs-otAfter);
+  const grossWeek = regHrs*hourlyRate + otHrs*hourlyRate*otMult;
+
+  const annWeek = grossWeek*52;
+  const fedT = fedTax(annWeek,filing);
+  const ficaT = annWeek*0.0765;
+  const stateT = annWeek*(stateTax/100);
+  const optAnnual = denverOPT*12;
+  const totalTaxAnn = fedT+ficaT+stateT+optAnnual;
+  const effRate = annWeek>0 ? totalTaxAnn/annWeek*100 : 0;
+  const taxWeek = totalTaxAnn/52;
+  const netWeek = grossWeek - taxWeek;
+
+  const wpp = {weekly:1,biweekly:2,semimonthly:2.167,monthly:4.333}[payFreq]||2;
+  const ppGross = grossWeek*wpp, ppTax = taxWeek*wpp, ppNet = netWeek*wpp;
+
+  const elapsed = state.clockInTime ? Date.now()-state.clockInTime.getTime() : 0;
+  const liveEarning = elapsed>0 ? (elapsed/3600000)*hourlyRate : 0;
+
+  return {weekHrs,weekSess,grossWeek,otHrs,otHrs,regHrs,otHrs,effRate,taxWeek,netWeek,ppGross,ppTax,ppNet,annWeek,fedT,ficaT,stateT,optAnnual,totalTaxAnn,elapsed,liveEarning,wpp,payFreq,hourlyRate};
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────
+function render(){
+  const now = new Date();
+  document.getElementById('live-clock').textContent = fmtT(now)+':'+String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('live-date').textContent = fmtD(now)+', '+now.getFullYear();
+
+  const c = compute();
+  const ci = !!state.clockInTime;
+
+  // Dashboard
+  document.getElementById('d-week-hrs').textContent = c.weekHrs.toFixed(1)+'h';
+  document.getElementById('d-week-sess').textContent = c.weekSess.length+' shift'+(c.weekSess.length!==1?'s':'');
+  document.getElementById('d-gross').textContent = fmt$(c.grossWeek);
+  document.getElementById('d-rate').textContent = '@$'+state.settings.hourlyRate+'/hr';
+  document.getElementById('d-net').textContent = fmt$(c.netWeek);
+  document.getElementById('d-eff-rate').textContent = '~'+c.effRate.toFixed(1)+'% tax';
+  document.getElementById('d-pp-gross').textContent = fmt$(c.ppGross);
+  document.getElementById('d-pp-tax').textContent = '-'+fmt$(c.ppTax);
+  document.getElementById('d-pp-net').textContent = fmt$(c.ppNet);
+
+  // Clocked-in banner
+  const cb = document.getElementById('clocked-in-banner');
+  if(ci){ cb.style.display='flex'; document.getElementById('banner-since').textContent='Since '+fmtT(state.clockInTime); document.getElementById('banner-timer').textContent=elapsedStr(c.elapsed); }
+  else cb.style.display='none';
+
+  // OT banner
+  const ot = document.getElementById('ot-banner');
+  if(c.otHrs>0){ ot.style.display='flex'; document.getElementById('ot-detail').textContent=c.otHrs.toFixed(1)+'h OT @ $'+(state.settings.hourlyRate*state.settings.otMult).toFixed(2)+'/hr'; }
+  else ot.style.display='none';
+
+  // Clock buttons
+  const btnClass = ci ? 'clock-btn out' : 'clock-btn in';
+  const btnTxt = ci ? '⏹ Clock Out' : '▶ Clock In';
+  document.getElementById('dash-clock-btn').className = btnClass;
+  document.getElementById('dash-clock-btn').textContent = btnTxt;
+  document.getElementById('main-clock-btn').className = btnClass;
+  document.getElementById('main-clock-btn').textContent = btnTxt;
+
+  // Timer
+  document.getElementById('timer-display').textContent = ci ? elapsedStr(c.elapsed) : '00:00:00';
+  document.getElementById('timer-display').style.color = ci ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('timer-status').textContent = ci ? 'Started at '+fmtT(state.clockInTime)+' · '+fmtD(state.clockInTime) : 'Press to start tracking';
+  const earnTxt = ci ? 'Est. so far: '+fmt$(c.liveEarning) : '';
+  document.getElementById('clock-earning').textContent = earnTxt;
+  document.getElementById('dash-earning').textContent = earnTxt;
+
+  // Sessions
+  const sl = document.getElementById('sess-list');
+  document.getElementById('sess-count-title').textContent = 'All Shifts ('+state.sessions.length+')';
+  if(state.sessions.length===0){ sl.innerHTML='<div class="empty">No shifts yet. Clock in or add manually.</div>'; }
+  else {
+    sl.innerHTML = [...state.sessions].reverse().map(s=>`
+      <div class="sess-row">
+        <div>
+          <div class="sess-info">${fmtD(s.date)}</div>
+          <div class="sess-sub">${fmtT(s.start)} → ${fmtT(s.end)}${s.note?' · '+s.note:''}</div>
+        </div>
+        <div class="sess-right">
+          <span class="pill accent">${s.hours.toFixed(2)}h</span>
+          <span class="pill green">${fmt$(s.hours*state.settings.hourlyRate)}</span>
+          <button class="btn-sm" onclick="deleteSession(${s.id})">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Taxes
+  const taxes = [
+    {label:'Federal Income Tax', amount:c.fedT/52, rate:c.fedT/Math.max(c.annWeek,1)*100, color:'var(--red)'},
+    {label:'FICA (SS + Medicare)', amount:c.ficaT/52, rate:7.65, color:'#f09050'},
+    {label:'Colorado State (4.40%)', amount:c.stateT/52, rate:state.settings.stateTax, color:'#a060f0'},
+    {label:'Denver OPT ($5.75/mo)', amount:state.settings.denverOPT/4.33, rate:state.settings.denverOPT/Math.max(c.grossWeek,1)*100, color:'var(--blue)'},
+  ];
+  document.getElementById('tax-rows').innerHTML = taxes.map(t=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:12px">${t.label}</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="pill" style="background:${t.color}22;color:${t.color}">${t.rate.toFixed(2)}%</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:500;font-size:13px;color:${t.color}">${fmt$(t.amount)}</span>
+        </div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(t.rate,40)/40*100}%;background:${t.color}"></div></div>
+    </div>`).join('');
+  document.getElementById('eff-rate-display').textContent = c.effRate.toFixed(1)+'%';
+  document.getElementById('t-gross').textContent = fmt$(c.grossWeek);
+  document.getElementById('t-tax').textContent = '-'+fmt$(c.taxWeek);
+  document.getElementById('t-net').textContent = fmt$(c.netWeek);
+  document.getElementById('pp-label').textContent = 'Per Paycheck ('+c.payFreq+')';
+  document.getElementById('t-pp-gross').textContent = fmt$(c.ppGross);
+  document.getElementById('t-pp-tax').textContent = '-'+fmt$(c.ppTax);
+  document.getElementById('t-pp-net').textContent = fmt$(c.ppNet);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+load();
+render();
+setInterval(render, 1000);
+</script>
+
+</body>
+</html>
